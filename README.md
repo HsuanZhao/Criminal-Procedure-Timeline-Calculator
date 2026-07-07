@@ -6,6 +6,9 @@
 ![许可证](https://img.shields.io/badge/license-MIT-green)
 ![语言](https://img.shields.io/badge/language-HTML%2FCSS%2FJS-orange)
 
+<img width="916" height="989" alt="image" src="https://github.com/user-attachments/assets/76ac2853-69e7-4ab5-892a-0ab45c88f653" />
+<img width="918" height="993" alt="image" src="https://github.com/user-attachments/assets/5f22fcc2-ce2c-4306-b796-f7231dbcd10c" />
+
 ---
 
 ## 📌 项目简介
