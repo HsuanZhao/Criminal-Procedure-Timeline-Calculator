@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中国刑案流程节点计算器</title>
+<style>
+  :root{
+    --bg:#0f1720;
+    --panel:#17212c;
+    --panel2:#1e2a37;
+    --line:#2a3a48;
+    --accent:#4fb8a6;
+    --accent2:#e0a64f;
+    --danger:#e0654f;
+    --text:#e8edf2;
+    --muted:#8ea0ad;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:var(--font);
+    background:linear-gradient(180deg,#0b1218,#111a22);
+    color:var(--text);
+    line-height:1.6;
+    padding-bottom:60px;
+  }
+  header{
+    padding:32px 20px 20px;
+    text-align:center;
+    border-bottom:1px solid var(--line);
+    background:radial-gradient(circle at 50% -20%, rgba(79,184,166,0.15), transparent 60%);
+  }
+  header h1{
+    margin:0 0 8px;
+    font-size:26px;
+    letter-spacing:1px;
+  }
+  header p{
+    margin:0;
+    color:var(--muted);
+    font-size:14px;
+  }
+  .container{
+    max-width:900px;
+    margin:0 auto;
+    padding:24px 16px;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:20px 22px;
+    margin-bottom:20px;
+  }
+  .card h2{
+    font-size:16px;
+    margin:0 0 14px;
+    color:var(--accent);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  label{
+    display:block;
+    font-size:13px;
+    color:var(--muted);
+    margin-bottom:6px;
+    margin-top:14px;
+  }
+  label:first-of-type{margin-top:0;}
+  input[type="date"]{
+    width:100%;
+    padding:10px 12px;
+    background:var(--panel2);
+    border:1px solid var(--line);
+    border-radius:8px;
+    color:var(--text);
+    font-size:15px;
+  }
+  .radio-group{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:6px;
+  }
+  .radio-option{
+    flex:1 1 auto;
+    min-width:140px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:10px 12px;
+    background:var(--panel2);
+    cursor:pointer;
+    font-size:13px;
+    transition:.15s;
+  }
+  .radio-option:hover{border-color:var(--accent);}
+  .radio-option.active{
+    border-color:var(--accent);
+    background:rgba(79,184,166,0.12);
+    color:var(--accent);
+  }
+  .radio-option small{
+    display:block;
+    color:var(--muted);
+    margin-top:3px;
+    font-size:11.5px;
+  }
+  .radio-option.active small{color:var(--accent);}
+  button.calc{
+    margin-top:20px;
+    width:100%;
+    padding:13px;
+    border:none;
+    border-radius:10px;
+    background:linear-gradient(90deg,var(--accent),#3a9686);
+    color:#08131a;
+    font-size:16px;
+    font-weight:600;
+    cursor:pointer;
+    letter-spacing:2px;
+  }
+  button.calc:hover{filter:brightness(1.08);}
+
+  .disclaimer{
+    font-size:12.5px;
+    color:var(--muted);
+    background:var(--panel2);
+    border-left:3px solid var(--accent2);
+    padding:10px 14px;
+    border-radius:6px;
+    margin-bottom:20px;
+  }
+
+  #result{display:none;}
+
+  .phase{
+    position:relative;
+    padding-left:26px;
+    margin-bottom:6px;
+  }
+  .phase::before{
+    content:"";
+    position:absolute;
+    left:6px;
+    top:6px;
+    bottom:-18px;
+    width:2px;
+    background:var(--line);
+  }
+  .phase:last-child::before{display:none;}
+  .phase-dot{
+    position:absolute;
+    left:0;
+    top:2px;
+    width:14px;
+    height:14px;
+    border-radius:50%;
+    background:var(--accent);
+    border:2px solid #0f1720;
+  }
+  .phase.warn .phase-dot{background:var(--accent2);}
+  .phase.danger .phase-dot{background:var(--danger);}
+
+  .phase-block{
+    background:var(--panel2);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px 16px;
+    margin-bottom:18px;
+  }
+  .phase-title{
+    font-size:15px;
+    font-weight:600;
+    margin-bottom:4px;
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+  .phase-date{
+    color:var(--accent);
+    font-weight:700;
+    font-size:14.5px;
+  }
+  .phase-sub{
+    font-size:12.5px;
+    color:var(--muted);
+    margin-bottom:8px;
+  }
+  .phase-desc{
+    font-size:13.5px;
+    color:var(--text);
+    margin-bottom:8px;
+  }
+  .phase-todo{
+    font-size:13px;
+    background:rgba(79,184,166,0.08);
+    border:1px dashed rgba(79,184,166,0.4);
+    border-radius:8px;
+    padding:8px 10px;
+    color:#c9e8e2;
+  }
+  .phase-todo b{color:var(--accent);}
+  .todo-lawyer{
+    font-size:13px;
+    background:rgba(224,166,79,0.09);
+    border:1px dashed rgba(224,166,79,0.45);
+    border-radius:8px;
+    padding:8px 10px;
+    color:#f0e0c2;
+    margin-top:8px;
+  }
+  .todo-lawyer b{color:var(--accent2);}
+  .law-toggle{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    font-size:12px;
+    color:var(--accent2);
+    background:rgba(224,166,79,0.1);
+    border:1px solid rgba(224,166,79,0.35);
+    border-radius:20px;
+    padding:4px 10px;
+    margin-top:8px;
+    cursor:pointer;
+    user-select:none;
+    width:fit-content;
+  }
+  .law-toggle:hover{background:rgba(224,166,79,0.2);}
+  .law-toggle .arrow{transition:transform .2s;}
+  .law-toggle.open .arrow{transform:rotate(90deg);}
+  .law-content{
+    display:none;
+    margin-top:8px;
+    font-size:12.5px;
+    color:#cfd8de;
+    background:#0f1720;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:10px 12px;
+    white-space:pre-line;
+  }
+  .law-content.show{display:block;}
+  .law-content .art{
+    color:var(--accent2);
+    font-weight:600;
+    display:block;
+    margin-bottom:4px;
+  }
+  .stage-header{
+    font-size:13px;
+    color:var(--accent2);
+    text-transform:uppercase;
+    letter-spacing:2px;
+    margin:26px 0 10px;
+    padding-top:6px;
+    border-top:1px dashed var(--line);
+  }
+  .stage-header:first-child{border-top:none;margin-top:0;}
+  .footer-note{
+    text-align:center;
+    color:var(--muted);
+    font-size:12px;
+    margin-top:30px;
+  }
+  .tag{
+    display:inline-block;
+    font-size:11px;
+    padding:2px 8px;
+    border-radius:20px;
+    background:rgba(224,166,79,0.15);
+    color:var(--accent2);
+    margin-left:6px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚖️ 中国刑案流程节点计算器</h1>
+  <p>输入《拘留通知书》上的拘留日期，推算理想状态下侦查、审查起诉、一审、二审各关键节点的大致日期</p>
+  <p style="margin-top:10px;font-size:12.5px;color:var(--muted);">制作：上海赵璇律师 · 微信：HsuanZhao</p>
+</header>
+
+<div class="container">
+
+  <div class="disclaimer">
+    ⚠️ 本工具依据《中华人民共和国刑事诉讼法》及相关司法解释中的<b>法定期限上限</b>进行推算，展示的是"理想状态"（即办案机关按最长期限、按顺序逐步延长、未发生重新计算羁押期限、未发现新罪行等特殊情况）下的节点日期。<br>
+    实际案件中，公安机关/检察院/法院经常提前完成各环节，也可能因案件复杂、退回补充侦查、发现新罪行、异地管辖等原因导致期限重新计算或延长，实际日期可能明显早于或晚于本计算结果。<b>本工具仅帮助家属心里有数、及时联系律师，不能替代专业法律意见。</b>
+  </div>
+
+  <div class="card">
+    <h2>📅 第一步：输入基本信息</h2>
+
+    <label>拘留日期（《拘留通知书》载明的拘留日期）</label>
+    <input type="date" id="detentionDate">
+
+    <label>嫌疑人是否属于以下可延长提请批捕期限的情形？</label>
+    <div class="radio-group" id="typeGroup">
+      <div class="radio-option" data-val="normal">
+        均不符合，普通情形
+        <small>提请批捕最长3日（特殊情况经批准可延长1-4日，最长7日）</small>
+      </div>
+      <div class="radio-option active" data-val="major">
+        符合下列任一情形（或不确定）
+        <small>提请批捕最长可延至30日 + 检察院7日 = 最长37日</small>
+      </div>
+    </div>
+    <div class="disclaimer" style="margin-top:10px;">
+      <b>可导致延长至30日的三种法定情形</b>（《刑事诉讼法》第91条 &《公安机关办理刑事案件程序规定》第129条）：<br>
+      · <b>流窜作案</b>——跨市/县连续作案，或在居住地作案后逃至外市/县继续作案；<br>
+      · <b>多次作案</b>——3次以上作案；<br>
+      · <b>结伙作案</b>——2人以上共同作案（含团伙、共同犯罪案件）。<br><br>
+      💡 <b>不确定属于哪种情形时，建议默认按"30天"计算</b>：这三类情形的认定标准较为宽泛，公安机关为给自己留出充足的侦查和取证时间，在案件存在多人、多次、跨地域等任何一点线索时，实践中<b>普遍倾向于按30天顶格计算</b>，并且往往会把这30天用满，而非提前报捕。因此除非家属能明确确认案件是"单人、单次、本地作案"这种非常简单清楚的情形，否则按30天预估会更贴近实际、更不容易让家属产生"怎么还没消息"的焦虑落差。
+    </div>
+
+    <label>是否已经被批准逮捕？（如尚不确定，请选择"未知/按流程推算"）</label>
+    <div class="radio-group" id="arrestGroup">
+      <div class="radio-option active" data-val="unknown">按流程推算</div>
+      <div class="radio-option" data-val="yes">已批准逮捕</div>
+    </div>
+
+    <button class="calc" onclick="calculate()">开始计算 →</button>
+  </div>
+
+  <div id="result"></div>
+
+  <div class="footer-note">
+    法条依据：《中华人民共和国刑事诉讼法》第91条、第69条、第156-160条、第172条、第208-212条、第232条等 &nbsp;|&nbsp; 仅供参考，请以办案机关实际通知及律师意见为准
+  </div>
+  <div class="footer-note" style="margin-top:6px;">
+    制作：上海赵璇律师 &nbsp;|&nbsp; 微信：HsuanZhao
+  </div>
+
+</div>
+
+<script>
+let selType = 'major';
+let selArrest = 'unknown';
+
+document.querySelectorAll('#typeGroup .radio-option').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    document.querySelectorAll('#typeGroup .radio-option').forEach(x=>x.classList.remove('active'));
+    el.classList.add('active');
+    selType = el.dataset.val;
+  });
+});
+document.querySelectorAll('#arrestGroup .radio-option').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    document.querySelectorAll('#arrestGroup .radio-option').forEach(x=>x.classList.remove('active'));
+    el.classList.add('active');
+    selArrest = el.dataset.val;
+  });
+});
+
+// ============ 法条库 ============
+const lawDB = {
+  art91: {
+    title:'《刑事诉讼法》第91条（提请批准逮捕）',
+    text:'公安机关对被拘留的人，认为需要逮捕的，应当在拘留后的三日以内，提请人民检察院审查批准。在特殊情况下，提请审查批准的时间可以延长一日至四日。\n对于流窜作案、多次作案、结伙作案的重大嫌疑分子，提请审查批准的时间可以延长至三十日。\n人民检察院应当自接到公安机关提请批准逮捕书后的七日以内，作出批准逮捕或者不批准逮捕的决定。人民检察院不批准逮捕的，公安机关应当在接到通知后立即释放，并且将执行情况及时通知人民检察院。对于需要继续侦查，并且符合取保候审、监视居住条件的，依法取保候审或者监视居住。'
+  },
+  reg129: {
+    title:'《公安机关办理刑事案件程序规定》第129条（三类重大嫌疑情形的认定）',
+    text:'本条规定的"流窜作案"，是指跨市、县管辖范围连续作案，或者在居住地作案后逃跑到外市、县继续作案；"多次作案"，是指三次以上作案；"结伙作案"，是指二人以上共同作案。'
+  },
+  art94: {
+    title:'《刑事诉讼法》第94条（逮捕后的处置）',
+    text:'人民法院、人民检察院对于各自决定逮捕的人，公安机关对于经人民检察院批准逮捕的人，都必须在逮捕后的二十四小时以内进行讯问。在发现不应当逮捕的时候，必须立即释放，发给释放证明。'
+  },
+  art95: {
+    title:'《刑事诉讼法》第95条（羁押必要性审查）',
+    text:'犯罪嫌疑人、被告人被逮捕后，人民检察院仍应当对羁押的必要性进行审查。对不需要继续羁押的，应当建议予以释放或者变更强制措施。有关机关应当在十日以内将处理情况通知人民检察院。'
+  },
+  art156: {
+    title:'《刑事诉讼法》第156条（一般侦查羁押期限）',
+    text:'对犯罪嫌疑人逮捕后的侦查羁押期限不得超过二个月。案情复杂、期限届满不能终结的案件，可以经上一级人民检察院批准延长一个月。'
+  },
+  art158: {
+    title:'《刑事诉讼法》第158条（特别重大复杂案件的延长）',
+    text:'因为特殊原因，在较长时间内不宜交付审判的特别重大复杂的案件，报请全国人民代表大会常务委员会批准延期审理的除外，对于交通十分不便的边远地区的重大复杂案件，流窜作案的重大复杂案件，涉及面广、取证困难的重大复杂案件，以及重大的犯罪集团案件，在第一百五十六条规定的期限届满仍不能侦查终结的，经省、自治区、直辖市人民检察院批准或者决定，可以延长二个月。'
+  },
+  art159: {
+    title:'《刑事诉讼法》第159条（可能判十年以上有期徒刑案件的再延长）',
+    text:'对犯罪嫌疑人可能判处十年有期徒刑以上刑罚，依照本法第一百五十八条规定延长期限届满，仍不能侦查终结的，经省、自治区、直辖市人民检察院批准或者决定，可以再延长二个月。'
+  },
+  art160: {
+    title:'《刑事诉讼法》第160条（重新计算侦查羁押期限）',
+    text:'在侦查期间，发现犯罪嫌疑人还有其他罪行的，自发现之日起依照本法第一百五十六条的规定重新计算侦查羁押期限。'
+  },
+  art172: {
+    title:'《刑事诉讼法》第172条（审查起诉期限）',
+    text:'人民检察院对于监察机关、公安机关移送起诉的案件，应当在一个月以内作出决定，重大、复杂的案件，可以延长十五日。\n犯罪嫌疑人认罪认罚，符合速裁程序适用条件的，应当在十日以内作出决定，对可能判处的有期徒刑超过一年的，可以延长至十五日。'
+  },
+  art175: {
+    title:'《刑事诉讼法》第175条（退回补充侦查）',
+    text:'人民检察院审查案件，对于需要补充侦查的，可以退回公安机关补充侦查，也可以自行侦查。\n对于补充侦查的案件，应当在一个月以内补充侦查完毕。补充侦查以二次为限。补充侦查完毕移送人民检察院后，人民检察院重新计算审查起诉期限。'
+  },
+  art208: {
+    title:'《刑事诉讼法》第208条（一审审理期限）',
+    text:'人民法院审理公诉案件，应当在受理后二个月以内宣判，至迟不得超过三个月。\n因本法第一百五十八条规定的情形之一，需要延长期限的，由高级人民法院批准或者决定，可以延长二个月；因特殊情况还需要延长的，报请最高人民法院批准。'
+  },
+  art211: {
+    title:'《刑事诉讼法》第211条（上诉、抗诉期限）',
+    text:'不服地方各级人民法院第一审判决的上诉和抗诉的期限为十日，不服判决提出的自诉案件的上诉和抗诉的期限为十日，不服裁定的上诉和抗诉的期限为五日，从接到判决书、裁定书的第二日起算。'
+  },
+  art232: {
+    title:'《刑事诉讼法》第232条（二审审理期限）',
+    text:'第二审人民法院受理上诉、抗诉案件，应当在二个月以内审结。对于可能判处死刑的案件或者附带民事诉讼的案件，以及有本法第一百五十八条规定情形之一的，经省、自治区、直辖市高级人民法院批准或者决定，可以延长二个月；因特殊情况还需要延长的，报请最高人民法院批准。'
+  }
+};
+
+let lawIdCounter = 0;
+function renderLawToggle(keys){
+  if(!keys || !keys.length) return '';
+  const id = 'law-' + (lawIdCounter++);
+  const content = keys.map(k=>{
+    const l = lawDB[k];
+    if(!l) return '';
+    return `<span class="art">${l.title}</span>${l.text}`;
+  }).join('\n\n');
+  return `
+    <div class="law-toggle" onclick="toggleLaw('${id}', this)"><span class="arrow">▶</span> 查看法条依据</div>
+    <div class="law-content" id="${id}">${content}</div>
+  `;
+}
+function toggleLaw(id, el){
+  const box = document.getElementById(id);
+  box.classList.toggle('show');
+  el.classList.toggle('open');
+}
+
+function addDays(date, days){
+  const d = new Date(date);
+  d.setDate(d.getDate()+days);
+  return d;
+}
+function addMonths(date, months){
+  const d = new Date(date);
+  const day = d.getDate();
+  d.setMonth(d.getMonth()+months);
+  // 处理月末溢出（如1月31日+1个月）
+  if(d.getDate() < day){ d.setDate(0); }
+  return d;
+}
+function fmt(d){
+  const y=d.getFullYear(), m=(d.getMonth()+1).toString().padStart(2,'0'), day=d.getDate().toString().padStart(2,'0');
+  const week=['周日','周一','周二','周三','周四','周五','周六'][d.getDay()];
+  return `${y}年${m}月${day}日 (${week})`;
+}
+
+function phaseBlock({title, dateStr, sub, desc, todo, todoLawyer, cls='', laws=[]}){
+  return `
+  <div class="phase-block ${cls}">
+    <div class="phase-title"><span>${title}</span><span class="phase-date">${dateStr}</span></div>
+    ${sub ? `<div class="phase-sub">${sub}</div>` : ''}
+    <div class="phase-desc">${desc}</div>
+    ${todo ? `<div class="phase-todo">👪 <b>家属可以做：</b>${todo}</div>` : ''}
+    ${todoLawyer ? `<div class="todo-lawyer">⚖️ <b>律师可以做：</b>${todoLawyer}</div>` : ''}
+    ${renderLawToggle(laws)}
+  </div>`;
+}
+
+function calculate(){
+  const val = document.getElementById('detentionDate').value;
+  if(!val){ alert('请先选择拘留日期'); return; }
+  const D0 = new Date(val+'T00:00:00');
+  let html = '';
+
+  // ============ 阶段一：刑事拘留 → 提请批捕 → 检察院决定 ============
+  html += `<div class="stage-header">阶段一 · 刑事拘留期（"黄金37天"）</div>`;
+
+  html += phaseBlock({
+    title:'刑事拘留开始',
+    dateStr: fmt(D0),
+    desc:'公安机关执行拘留，24小时内应通知家属（无法通知的除外）并送看守所羁押。',
+    todo:'核实拘留通知书上的办案单位、涉嫌罪名、承办人联系方式，尽快委托律师——侦查阶段是"黄金37天"，越早介入越主动。',
+    todoLawyer:'律师凭"三证"（律师执业证、律所证明、委托书）无需办案机关许可即可到看守所会见嫌疑人（危害国安、恐怖活动、特别重大贿赂三类案件除外），会见不被监听。第一次会见能第一时间了解涉嫌罪名和案件情况、告知法律后果、进行心理疏导，也是家属与被羁押人之间唯一的信息通道。',
+    laws:['art91']
+  });
+
+  let reportDays, reportLabel;
+  if(selType==='major'){
+    reportDays = 30;
+    reportLabel = '重大嫌疑分子（流窜/多次/结伙作案）情形：提请批捕时限最长可延至30日';
+  } else {
+    reportDays = 3;
+    reportLabel = '普通情形：一般3日内提请批捕，特殊情况可延长1至4日（最长7日）';
+  }
+  const reportDate = addDays(D0, reportDays);
+  html += phaseBlock({
+    title:'公安机关最迟提请检察院批准逮捕',
+    dateStr: fmt(reportDate),
+    sub: reportLabel,
+    desc:'公安机关认为需要逮捕的，须在此日期前将"提请批准逮捕书"移送同级人民检察院审查。',
+    todo:'留意办案单位是否已经报捕，可礼貌询问案件进展，但不建议自行找关系"打听"或干预案件，以免弄巧成拙。',
+    todoLawyer:'律师可在此前主动约见侦查人员了解案情、涉嫌罪名，并结合会见掌握的情况，向检察院提交书面《不批准逮捕法律意见书》/申请变更强制措施（取保候审、监视居住），争取在批捕环节就把人"捞"出来。这是律师能主动出击、影响案件走向的关键窗口。',
+    laws:['art91','reg129']
+  });
+
+  const arrestDecideDate = addDays(reportDate, 7);
+  const cls37 = selType==='major' ? 'danger' : 'warn';
+  html += phaseBlock({
+    title:'检察院最迟作出是否批准逮捕的决定',
+    dateStr: fmt(arrestDecideDate),
+    sub: selType==='major' ? '即拘留满37日（俗称"黄金37天"）' : `即拘留满${reportDays+7}日`,
+    desc:'检察院自接到提请批捕书后7日内决定。<br>· 若<b>批准逮捕</b>：转入侦查羁押阶段（见阶段二）。<br>· 若<b>不批准逮捕</b>：公安机关须立即释放，或依法取保候审/监视居住。',
+    todo:'这是关键窗口——一旦超过此日期仍未放人，通常意味着已被批捕，将至少被羁押至法院阶段。请务必在此前完成会见与委托安排，不要观望等待。',
+    todoLawyer:'律师可当面向承办检察官发表辩护意见并要求记录在案，围绕"是否具有社会危险性"（是否可能毁灭证据、串供、再犯、逃跑等）逐项论证，这是判断是否批捕的核心标准，专业辩护在此环节往往能起到决定性作用。',
+    cls: cls37,
+    laws:['art91','art94']
+  });
+
+  if(selArrest==='yes' || true){
+    // 阶段二：批准逮捕后的侦查羁押期限（假设已批捕，按理想/最长链路推演）
+    html += `<div class="stage-header">阶段二 · 批准逮捕后的侦查羁押期（假设已被批捕）</div>`;
+
+    const arrestDate = arrestDecideDate; // 以检察院决定日近似作为逮捕执行日
+    const inv2m = addMonths(arrestDate, 2);
+    html += phaseBlock({
+      title:'一般侦查羁押期限届满',
+      dateStr: fmt(inv2m),
+      sub:'逮捕后一般侦查羁押期限为2个月',
+      desc:'公安机关应在此前侦查终结，移送检察院审查起诉；否则须依法办理延期手续。',
+      todo:'定期（通常每月）安排会见或让律师转达关心，同时开始准备谅解、赔偿、退赃等有利量刑材料。',
+      todoLawyer:'律师可根据案情持续跟进侦查动向，代为申请变更强制措施，随时向检察院提出"羁押必要性审查"申请；如发现证据不足或事实不清，可提前介入引导侦查方向、促成对当事人有利证据附卷。',
+      laws:['art156']
+    });
+
+    const inv3m = addMonths(arrestDate, 3);
+    html += phaseBlock({
+      title:'案情复杂可延长后届满',
+      dateStr: fmt(inv3m),
+      sub:'案情复杂、期限届满不能终结的，经上一级检察院批准可延长1个月',
+      desc:'常见于案情涉及多人、多笔事实或需要鉴定等复杂情况。',
+      todo:'保持稳定的经济来源和情绪支持，避免因焦虑病急乱投医、轻信"花钱捞人"等说法。',
+      todoLawyer:'律师可协助核实延长羁押期限的手续是否合法（是否确实经上一级检察院批准），发现程序瑕疵可代为申诉、控告；同时继续与办案人员保持沟通，掌握侦查进度。',
+      laws:['art156']
+    });
+
+    const inv5m = addMonths(arrestDate, 5);
+    html += phaseBlock({
+      title:'特别重大复杂案件延长后届满',
+      dateStr: fmt(inv5m),
+      sub:'特别重大复杂案件，经省级检察院批准可再延长2个月',
+      desc:'适用于涉黑、涉恐、集团犯罪等特别重大复杂案件。',
+      todoLawyer:'案件走到这一步通常涉及多名被告人、跨区域取证，律师需要更深入地梳理全案证据链、区分主从犯地位，并与同案其他辩护人协调辩护策略，避免"猪队友"效应影响自己当事人的量刑。',
+      laws:['art158']
+    });
+
+    const inv7m = addMonths(arrestDate, 7);
+    html += phaseBlock({
+      title:'可能判十年以上有期徒刑案件的最长羁押期届满',
+      dateStr: fmt(inv7m),
+      sub:'对可能判处十年以上有期徒刑的案件，还可再延长2个月（须报请最高检核准的除外）',
+      desc:'这是普通案件侦查羁押阶段的理论最长期限（不含发现新罪行重新计算、境外调查取证等特殊延长情形）。',
+      todo:'羁押时间较长时，家属情绪压力会明显增大，建议保持规律探视/律师会见频率，避免案件久拖导致家庭关系或经济状况雪上加霜。',
+      todoLawyer:'羁押期间可随时向检察院申请"羁押必要性审查"，符合条件（罹患严重疾病、系初犯偶犯、积极赔偿获得谅解等）可建议变更为取保候审或监视居住；同时着手整理罪轻、立功、自首等有利量刑材料，为审查起诉和审判阶段的辩护打好基础。',
+      cls:'warn',
+      laws:['art159','art160','art95']
+    });
+
+    // 阶段三：审查起诉
+    html += `<div class="stage-header">阶段三 · 审查起诉阶段（以侦查终结后移送检察院之日起算，此处以一般2个月侦查期结束为例）</div>`;
+
+    const proseStart = inv2m;
+    const prose1m = addMonths(proseStart, 1);
+    html += phaseBlock({
+      title:'检察院一般应作出决定',
+      dateStr: fmt(prose1m),
+      sub:'审查起诉一般期限为1个月（自检察院收到移送起诉材料之日起算）',
+      desc:'检察院应讯问犯罪嫌疑人、听取辩护人及被害人意见，决定提起公诉、不起诉或退回补充侦查。',
+      todo:'配合律师准备可提交给检察院的从宽材料（谅解书、退赔凭证、悔过书等），了解认罪认罚从宽制度对量刑的实际影响。',
+      todoLawyer:'自案件移送审查起诉之日起，律师可全面查阅、摘抄、复制案卷材料（不再限于诉讼文书），这是律师第一次看到全部指控证据的机会，可据此制作阅卷笔录、发现证据漏洞，向检察官当面陈述辩护意见并提交书面《法律意见书》，争取不起诉或从轻处理；如当事人拟认罪认罚，律师需就罪名认定、量刑建议提出专业意见并在具结书签署时到场见证。',
+      laws:['art172']
+    });
+
+    const prose1p5m = addDays(prose1m, 15);
+    html += phaseBlock({
+      title:'重大复杂案件延长后届满',
+      dateStr: fmt(prose1p5m),
+      sub:'重大、复杂案件可延长15日',
+      desc:'审查起诉阶段最长（不含退回补充侦查）为1个半月。',
+      todoLawyer:'延长期内律师可继续补充提交证据材料或法律意见，跟进检察官对全案证据的最新评估意见，必要时可申请当面沟通、听取检察官初步倾向。',
+      laws:['art172']
+    });
+
+    const backInv = addMonths(prose1p5m, 1);
+    html += phaseBlock({
+      title:'第一次退回补充侦查（如有）完毕届满',
+      dateStr: fmt(backInv),
+      sub:'退回补充侦查以2次为限，每次不超过1个月，补充侦查完毕移送检察院后重新计算审查起诉期限',
+      desc:'若案件事实不清、证据不足，检察院可退回公安机关补充侦查；每退回一次，审查起诉期限重新起算1个月（可再延长15日）。',
+      todo:'退回补充侦查往往说明证据存在瑕疵，是案件出现转机的信号，家属可保持耐心，避免因流程延长而误以为"情况变糟"。',
+      todoLawyer:'退回补充侦查阶段是律师查漏补缺、提出新证据线索的好时机，可主动向公安机关提交对当事人有利的物证、证人线索，或申请重新鉴定，争取补充侦查后作出不起诉或存疑不诉的决定。',
+      laws:['art175']
+    });
+
+    // 阶段四：一审
+    html += `<div class="stage-header">阶段四 · 提起公诉后 · 一审阶段（以审查起诉一般1个月结束、检察院随即提起公诉为例）</div>`;
+
+    const trialStart = prose1m; // 近似：以审查起诉一般期满即提起公诉为起点
+    const t2m = addMonths(trialStart, 2);
+    html += phaseBlock({
+      title:'一审一般应当审结',
+      dateStr: fmt(t2m),
+      sub:'一审法院受理公诉案件后，一般审限为2个月',
+      desc:'法院开庭审理并作出一审判决。辩护律师可在开庭前申请调取证据、申请证人出庭、申请排除非法证据等。',
+      todo:'开庭前配合律师做好家属证言、旁听安排，庭审当天可申请旁听（公开审理案件），给予当事人心理支持。',
+      todoLawyer:'律师可在开庭前查阅、摘抄、复制全部案卷材料，参加庭前会议就回避、证人出庭、非法证据排除等程序性问题发表意见；开庭时充分质证、发问、辩论，就定罪、量刑发表书面及口头辩护意见，法院对不予采纳的辩护意见应作出说明——这是决定最终判决结果最关键的环节，专业、扎实的出庭辩护往往直接影响量刑幅度。',
+      laws:['art208']
+    });
+
+    const t3m = addMonths(trialStart, 3);
+    html += phaseBlock({
+      title:'案情复杂延长后届满',
+      dateStr: fmt(t3m),
+      sub:'因案情复杂等原因，经上一级法院批准，可延长1个月',
+      desc:'常见于共同犯罪人数众多、案卷材料庞大等情形。',
+      todoLawyer:'延长审理期间律师可继续申请调取新证据、申请重新鉴定或勘验，进一步夯实辩护意见。',
+      laws:['art208']
+    });
+
+    const t4m = addMonths(trialStart, 4);
+    html += phaseBlock({
+      title:'特殊情况再延长届满（须最高法院批准）',
+      dateStr: fmt(t4m),
+      sub:'如仍需延长，须报请最高人民法院批准',
+      desc:'适用于极少数特别重大、疑难复杂案件，此为一审阶段理论最长期限参考。',
+      cls:'warn',
+      laws:['art208']
+    });
+
+    // 阶段五：上诉期 + 二审
+    html += `<div class="stage-header">阶段五 · 一审宣判后 · 上诉/抗诉期与二审（如不服一审判决）</div>`;
+
+    const appealDeadline = addDays(t2m, 10);
+    html += phaseBlock({
+      title:'上诉/抗诉期届满',
+      dateStr: fmt(appealDeadline),
+      sub:'自收到判决书次日起10日内可提出上诉（检察院抗诉期同为10日）',
+      desc:'被告人、辩护人、法定代理人可提出上诉；判决书送达后如不上诉不抗诉，10日期满即发生法律效力。',
+      todo:'如对一审判决不服，务必在10日内明确表态并配合律师提交书面上诉状，逾期视为放弃上诉权利；上诉不加刑原则下，仅被告方上诉一般不会被加重处罚，无需过度顾虑。',
+      todoLawyer:'律师会第一时间与当事人沟通判决结果与量刑理由，评估是否有上诉必要及改判空间（事实认定、法律适用、量刑情节等），经被告人同意后代为撰写并提交上诉状，确保不因家属或当事人一时犹豫而错失10日法定期限。',
+      cls:'warn',
+      laws:['art211']
+    });
+
+    const appeal2m = addMonths(appealDeadline, 2);
+    html += phaseBlock({
+      title:'二审一般应当审结',
+      dateStr: fmt(appeal2m),
+      sub:'第二审法院受理上诉/抗诉案件后，一般审限为2个月',
+      desc:'二审实行不公开开庭或开庭审理相结合，可能维持原判、改判或发回重审。',
+      todoLawyer:'二审律师需全面、客观地重新审阅原审全部案卷（不受上诉范围限制），必要时主动调取新证据、申请重新鉴定，代当事人向法院提交书面二审辩护意见，力争改判或发回重审；如二审不开庭审理，律师应在收到通知后10日内提交书面辩护意见。',
+      laws:['art232']
+    });
+
+    const appeal4m = addMonths(appealDeadline, 4);
+    html += phaseBlock({
+      title:'可延长后届满',
+      dateStr: fmt(appeal4m),
+      sub:'可能判死刑、附带民事诉讼或有特殊情形的，经省级高院批准可延长2个月；特殊情况仍需延长的，报最高法院批准',
+      desc:'此为二审阶段理论最长期限参考，二审判决、裁定即为终审，一般不得上诉（审判监督程序除外）。',
+      cls:'danger',
+      laws:['art232']
+    });
+  }
+
+  document.getElementById('result').innerHTML = html;
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('result').scrollIntoView({behavior:'smooth', block:'start'});
+}
+</script>
+
+</body>
+</html>
